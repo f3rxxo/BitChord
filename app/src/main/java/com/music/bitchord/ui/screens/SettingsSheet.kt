@@ -243,6 +243,7 @@ fun SettingsScreen(
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
     val lockScreenArt by AppSettings.lockScreenArt.collectAsStateWithLifecycle()
+    val lockWallpaper by AppSettings.lockWallpaper.collectAsStateWithLifecycle()
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
@@ -1401,6 +1402,25 @@ fun SettingsScreen(
                         AppSettings.setLockScreenArt(on)
                         if (on) LockScreenArt.ensureAccess(lockCtx)
                     },
+                )
+            }
+            val lockWallpaperTitle = stringResource(R.string.lock_wallpaper)
+            row(lockWallpaperTitle, "lock screen", "wallpaper", "album art", "cover", "player") {
+                SettingsRow(
+                    icon = Icons.Rounded.Lock,
+                    title = lockWallpaperTitle,
+                    subtitle = stringResource(R.string.lock_wallpaper_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = lockWallpaper,
+                            onCheckedChange = AppSettings::setLockWallpaper,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setLockWallpaper(!lockWallpaper) },
                 )
             }
             val lockScreenArtPreviewTitle = stringResource(R.string.lock_screen_art_preview)

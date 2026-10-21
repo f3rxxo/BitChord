@@ -1208,4 +1208,6 @@
     <string name="lock_screen_art_subtitle">While music plays, show the cover full screen over the lock screen. Swipe up to reach the normal lock screen.</string>
     <string name="lock_screen_art_preview">Preview lock screen art</string>
     <string name="lock_screen_art_preview_subtitle">Open the cover screen now, to check how it looks</string>
+    <string name="lock_wallpaper">Cover as lock screen wallpaper</string>
+    <string name="lock_wallpaper_subtitle">While music plays, set the lock screen wallpaper to the current cover. Your wallpaper is put back after playback pauses, where the phone allows it.</string>
 </resources>
