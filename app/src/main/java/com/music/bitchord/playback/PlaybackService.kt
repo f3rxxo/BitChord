@@ -1774,6 +1774,9 @@ class PlaybackService : MediaLibraryService() {
             .build()
         refreshCustomLayouts()
 
+        // Lock screen cover: asks the player at the moment the screen wakes.
+        lockArtReceiver = LockScreenArt.register(this) { player?.isPlaying == true }
+
         // Last, so a receiver that outlived the app is adopted by a service
         // whose queue is already restored.
         CastController.ensureStarted(this)
@@ -7116,7 +7119,11 @@ class PlaybackService : MediaLibraryService() {
     }
 
 
+    private var lockArtReceiver: android.content.BroadcastReceiver? = null
+
     override fun onDestroy() {
+        lockArtReceiver?.let { runCatching { unregisterReceiver(it) } }
+        lockArtReceiver = null
         WearBridge.attachStreams(null)
         WearBridge.releaseSpeaker()
         // Let go of the receiver's player but leave its session alone: a

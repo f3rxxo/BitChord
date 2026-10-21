@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.ScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Animation
@@ -115,6 +116,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import com.music.bitchord.playback.LockScreenArt
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -240,6 +242,7 @@ fun SettingsScreen(
     val exportDownloads by AppSettings.exportDownloads.collectAsStateWithLifecycle()
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
+    val lockScreenArt by AppSettings.lockScreenArt.collectAsStateWithLifecycle()
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
@@ -1371,6 +1374,33 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setHideVolumeBar(!hideVolumeBar) },
+                )
+            }
+            val lockScreenArtTitle = stringResource(R.string.lock_screen_art)
+            row(lockScreenArtTitle, "lock screen", "album art", "cover", "player") {
+                val lockCtx = LocalContext.current
+                SettingsRow(
+                    icon = Icons.Rounded.Lock,
+                    title = lockScreenArtTitle,
+                    subtitle = stringResource(R.string.lock_screen_art_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = lockScreenArt,
+                            onCheckedChange = { on ->
+                                AppSettings.setLockScreenArt(on)
+                                if (on) LockScreenArt.ensureAccess(lockCtx)
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = {
+                        val on = !lockScreenArt
+                        AppSettings.setLockScreenArt(on)
+                        if (on) LockScreenArt.ensureAccess(lockCtx)
+                    },
                 )
             }
             val hideStatusBarTitle = stringResource(R.string.hide_status_bar_in_player)
