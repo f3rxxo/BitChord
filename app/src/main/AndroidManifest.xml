@@ -428,6 +428,17 @@
             android:theme="@android:style/Theme.Material.NoActionBar.TranslucentDecor" />
 
         <service
+            android:name=".playback.LockArtTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_notification_logo"
+            android:label="@string/lock_screen_art_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".playback.PlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">

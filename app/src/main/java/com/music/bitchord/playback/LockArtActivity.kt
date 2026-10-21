@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -62,6 +62,7 @@ import androidx.core.view.WindowCompat
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
+import com.music.bitchord.data.model.artworkAt
 import kotlin.math.roundToInt
 
 /**
@@ -199,13 +200,16 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
         // into the wash behind it instead of ending in a hard line.
         if (art != null) {
             AsyncImage(
-                model = art,
+                // A larger copy than the notification's: this one fills half the screen.
+                model = art?.artworkAt(1080) ?: art,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .aspectRatio(1f)
+                    // About half the screen, as on the player; Crop trims the sides
+                    // of the square cover rather than squashing it.
+                    .fillMaxHeight(0.55f)
                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()

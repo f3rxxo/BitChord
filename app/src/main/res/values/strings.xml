@@ -1208,4 +1208,5 @@
     <string name="lock_screen_art_subtitle">While music plays, show the cover full screen over the lock screen. Swipe up to reach the normal lock screen.</string>
     <string name="lock_screen_art_preview">Preview lock screen art</string>
     <string name="lock_screen_art_preview_subtitle">Open the cover screen now, to check how it looks</string>
+    <string name="lock_screen_art_tile">Lock screen art</string>
 </resources>
