@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -38,18 +40,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.foundation.layout.offset
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
@@ -58,10 +67,16 @@ import kotlin.math.roundToInt
 /**
  * The current cover, full screen, above the lock screen. Swipe up to slide it
  * away and reach the normal lock screen beneath. See [LockScreenArt].
+ *
+ * Laid out like the player: the sharp cover along the top, dissolving at its
+ * lower edge into a blurred copy of itself that carries the title and the
+ * transport. It stays up through the screen turning off and on, so locking the
+ * phone with it open leaves it waiting on the lock screen; it closes when the
+ * phone is unlocked or it is swiped away.
  */
 class LockArtActivity : ComponentActivity() {
 
-    private val screenOff = object : BroadcastReceiver() {
+    private val unlocked = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             finish()
         }
@@ -77,21 +92,21 @@ class LockArtActivity : ComponentActivity() {
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         getSystemService(NotificationManager::class.java)?.cancel(LockScreenArt.NOTIFICATION_ID)
-        androidx.core.content.ContextCompat.registerReceiver(
+        ContextCompat.registerReceiver(
             this,
-            screenOff,
-            IntentFilter(Intent.ACTION_SCREEN_OFF).apply { addAction(Intent.ACTION_USER_PRESENT) },
-            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+            unlocked,
+            IntentFilter(Intent.ACTION_USER_PRESENT),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
         setContent { LockArtScreen(onDismiss = { finish() }) }
     }
 
     override fun onDestroy() {
-        runCatching { unregisterReceiver(screenOff) }
+        runCatching { unregisterReceiver(unlocked) }
         super.onDestroy()
     }
 }
@@ -127,16 +142,17 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
     }
 
     var dragY by remember { mutableFloatStateOf(0f) }
-    var height by remember { mutableFloatStateOf(1f) }
+    var screenHeight by remember { mutableFloatStateOf(1f) }
+    val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     Box(
         Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .onSizeChanged { height = it.height.toFloat().coerceAtLeast(1f) }
+            .onSizeChanged { screenHeight = it.height.toFloat().coerceAtLeast(1f) }
             // Follows the finger upward only; a swipe far enough lets go of the screen.
             .offset { IntOffset(0, dragY.roundToInt().coerceAtMost(0)) }
-            .alpha(1f - (-dragY / height).coerceIn(0f, 0.6f))
+            .alpha(1f - (-dragY / screenHeight).coerceIn(0f, 0.6f))
             .pointerInput(Unit) {
                 detectVerticalDragGestures(
                     onVerticalDrag = { change, delta ->
@@ -144,31 +160,66 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                         dragY += delta
                     },
                     onDragEnd = {
-                        if (-dragY > height * 0.22f) onDismiss() else dragY = 0f
+                        if (-dragY > screenHeight * 0.22f) onDismiss() else dragY = 0f
                     },
                     onDragCancel = { dragY = 0f },
                 )
             },
     ) {
-        if (art != null) {
+        // The wash: the cover blurred across the whole screen, darkened so the
+        // text reads. Below Android 12 there is no blur, so a plain dark fill.
+        if (canBlur && art != null) {
             AsyncImage(
                 model = art,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Overscaled so the blur's clamped edges never reach a visible one.
+                    .graphicsLayer {
+                        scaleX = 1.4f
+                        scaleY = 1.4f
+                    }
+                    .blur(72.dp, BlurredEdgeTreatment.Unbounded),
             )
         }
-        // Darkens the bottom so the text and controls read over any cover.
         Box(
             Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        0.45f to Color.Transparent,
-                        1f to Color.Black.copy(alpha = 0.85f),
+                        0f to Color.Black.copy(alpha = 0.35f),
+                        0.5f to Color.Black.copy(alpha = 0.5f),
+                        1f to Color.Black.copy(alpha = 0.8f),
                     ),
                 ),
         )
+
+        // The sharp cover, edge to edge along the top, its lower part dissolving
+        // into the wash behind it instead of ending in a hard line.
+        if (art != null) {
+            AsyncImage(
+                model = art,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                0f to Color.Black,
+                                0.55f to Color.Black,
+                                1f to Color.Transparent,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    },
+            )
+        }
 
         Column(
             Modifier

@@ -378,9 +378,6 @@ object AppSettings {
     /** Raises the current cover full screen over the lock screen while music plays. */
     val lockScreenArt = MutableStateFlow(false)
 
-    /** Sets the lock screen wallpaper to the current cover while music plays. */
-    val lockWallpaper = MutableStateFlow(false)
-
     /** Hides the device status bar (clock, battery, notifications) while the main player is open. */
     val hideStatusBarInPlayer = MutableStateFlow(false)
 
@@ -868,7 +865,6 @@ object AppSettings {
         stopOnTaskRemoved.value = prefs.getBoolean(KEY_STOP_ON_TASK_REMOVED, false)
         hideVolumeBar.value = prefs.getBoolean(KEY_HIDE_VOLUME_BAR, false)
         lockScreenArt.value = prefs.getBoolean(KEY_LOCK_SCREEN_ART, false)
-        lockWallpaper.value = prefs.getBoolean(KEY_LOCK_WALLPAPER, false)
         hideStatusBarInPlayer.value = prefs.getBoolean(KEY_HIDE_STATUS_BAR_IN_PLAYER, false)
         hideSongStatus.value = prefs.getBoolean(KEY_HIDE_SONG_STATUS, false)
         showQueueHistory.value = prefs.getBoolean(KEY_SHOW_QUEUE_HISTORY, false)
@@ -1239,11 +1235,6 @@ object AppSettings {
     fun setStopOnTaskRemoved(value: Boolean) {
         stopOnTaskRemoved.value = value
         prefs.edit().putBoolean(KEY_STOP_ON_TASK_REMOVED, value).apply()
-    }
-
-    fun setLockWallpaper(value: Boolean) {
-        lockWallpaper.value = value
-        prefs.edit().putBoolean(KEY_LOCK_WALLPAPER, value).apply()
     }
 
     fun setLockScreenArt(value: Boolean) {
@@ -2041,7 +2032,6 @@ object AppSettings {
     private const val KEY_STOP_ON_TASK_REMOVED = "stop_on_task_removed"
     private const val KEY_HIDE_VOLUME_BAR = "hide_volume_bar"
     private const val KEY_LOCK_SCREEN_ART = "lock_screen_art"
-    private const val KEY_LOCK_WALLPAPER = "lock_wallpaper"
     private const val KEY_HIDE_STATUS_BAR_IN_PLAYER = "hide_status_bar_in_player"
     private const val KEY_HIDE_SONG_STATUS = "hide_song_status"
     private const val KEY_SHOW_QUEUE_HISTORY = "show_queue_history"

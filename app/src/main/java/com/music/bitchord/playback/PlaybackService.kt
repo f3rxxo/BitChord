@@ -1776,7 +1776,6 @@ class PlaybackService : MediaLibraryService() {
 
         // Lock screen cover: asks the player at the moment the screen wakes.
         lockArtReceiver = LockScreenArt.register(this) { player?.isPlaying == true }
-        LockWallpaper.attach(this, exoPlayer, scope)
 
         // Last, so a receiver that outlived the app is adopted by a service
         // whose queue is already restored.
