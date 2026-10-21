@@ -71,6 +71,7 @@ class LockArtActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true)
+            setTurnScreenOn(true)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
@@ -82,17 +83,11 @@ class LockArtActivity : ComponentActivity() {
         androidx.core.content.ContextCompat.registerReceiver(
             this,
             screenOff,
-            IntentFilter(Intent.ACTION_SCREEN_OFF),
+            IntentFilter(Intent.ACTION_SCREEN_OFF).apply { addAction(Intent.ACTION_USER_PRESENT) },
             androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
         setContent { LockArtScreen(onDismiss = { finish() }) }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        // Gone with the screen: the next wake raises a fresh one.
-        if (!isChangingConfigurations) finish()
     }
 
     override fun onDestroy() {

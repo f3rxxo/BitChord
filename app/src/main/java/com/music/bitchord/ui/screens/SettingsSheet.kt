@@ -1403,6 +1403,20 @@ fun SettingsScreen(
                     },
                 )
             }
+            val lockScreenArtPreviewTitle = stringResource(R.string.lock_screen_art_preview)
+            row(lockScreenArtPreviewTitle, "lock screen", "album art", "preview", "test") {
+                val previewCtx = LocalContext.current
+                SettingsRow(
+                    icon = Icons.Rounded.Lock,
+                    title = lockScreenArtPreviewTitle,
+                    subtitle = stringResource(R.string.lock_screen_art_preview_subtitle),
+                    onClick = {
+                        previewCtx.startActivity(
+                            Intent(previewCtx, com.music.bitchord.playback.LockArtActivity::class.java),
+                        )
+                    },
+                )
+            }
             val hideStatusBarTitle = stringResource(R.string.hide_status_bar_in_player)
             row(hideStatusBarTitle, "status bar", "immersive", "fullscreen", "player") {
                 SettingsRow(
