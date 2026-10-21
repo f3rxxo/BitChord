@@ -1204,4 +1204,6 @@
     <string name="wear_os_code_hint">Pairing code</string>
     <string name="wear_os_done">Done</string>
     <string name="signed_by">Signed by %1$s</string>
+    <string name="lock_screen_art">Lock screen album art</string>
+    <string name="lock_screen_art_subtitle">While music plays, show the cover full screen over the lock screen. Swipe up to reach the normal lock screen.</string>
 </resources>
