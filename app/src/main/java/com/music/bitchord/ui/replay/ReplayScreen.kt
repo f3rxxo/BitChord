@@ -35,10 +35,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -117,6 +121,7 @@ fun ReplayScreen(
     val topArtists = stringResource(R.string.top_artists)
     val topAlbums = stringResource(R.string.top_albums)
     val topGenres = stringResource(R.string.top_genres)
+    var songsExpanded by rememberSaveable { mutableStateOf(false) }
 
     // Library cards open this same page, but category cards should land on the
     // corresponding chart rather than making the user find it again. Wait for
@@ -190,8 +195,11 @@ fun ReplayScreen(
                     chart(
                         key = "songs",
                         title = topSongs,
-                        rows = summary.songRows(CHART_LENGTH),
+                        rows = summary.songRows(if (songsExpanded) SONGS_EXPANDED_LENGTH else CHART_LENGTH),
                         dark = dark,
+                        toggle = if (summary.songs.size > CHART_LENGTH) {
+                            ChartToggle(songsExpanded) { songsExpanded = !songsExpanded }
+                        } else null,
                         onClick = { index ->
                             summary.songs.getOrNull(index)?.let { onPlaySong(it.song) }
                         },
@@ -428,13 +436,48 @@ private fun LazyListScope.chart(
     dark: Boolean,
     onClick: (Int) -> Unit,
     circular: Boolean = false,
+    toggle: ChartToggle? = null,
 ) {
     if (rows.isEmpty()) return
     item("$key-title") { SectionTitle(title, dark) }
     items(rows, key = { "$key-${it.key}" }) { row ->
         ReplayChartRow(row, circular, dark) { onClick(row.rank - 1) }
     }
+    if (toggle != null) {
+        item("$key-toggle") { ChartToggleRow(toggle, dark) }
+    }
     item("$key-gap") { Spacer(Modifier.height(20.dp)) }
+}
+
+private class ChartToggle(val expanded: Boolean, val onToggle: () -> Unit)
+
+/** "Show more" / "Show less" row that reveals or hides the lower ranks of a chart. */
+@Composable
+private fun ChartToggleRow(toggle: ChartToggle, dark: Boolean) {
+    val textColor = if (dark) Color.White else Color.Black
+    Row(
+        Modifier
+            .padding(horizontal = PAGE_GUTTER + 4.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(textColor.copy(alpha = 0.12f))
+            .clickable(onClick = toggle.onToggle)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(if (toggle.expanded) R.string.show_less else R.string.show_more),
+            style = MaterialTheme.typography.titleSmall,
+            color = textColor,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = BitChordIcons.ChevronRight,
+            contentDescription = null,
+            tint = textColor.copy(alpha = 0.5f),
+            modifier = Modifier.size(16.dp).rotate(if (toggle.expanded) -90f else 90f),
+        )
+    }
 }
 
 @Composable
@@ -628,3 +671,6 @@ private fun EmptyReplay(period: ReplayPeriod, dark: Boolean) {
  * top ten is a list.
  */
 private const val CHART_LENGTH = 5
+
+/** Songs shown when the Top songs chart is expanded. */
+private const val SONGS_EXPANDED_LENGTH = 25
