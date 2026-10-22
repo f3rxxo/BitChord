@@ -1,19 +1,17 @@
-name: Build APK
+name: Build optimized APK
 
-# Builds an installable, debug-signed APK on every push - no keystore or
-# secrets required. Download it from the run's Artifacts section.
+# A debug-signed APK built the way a release is (R8 shrinking, not debuggable),
+# so it runs at release speed without needing a signing key. Installs next to
+# the debug build as "com.dev.bitchord.benchmark". Run it by hand from the
+# Actions tab; use it to check playback glitches that only a slow debug build
+# causes.
 on:
-  push:
   workflow_dispatch:
-
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -25,8 +23,6 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Optional Last.fm scrobbling keys. Empty when the secrets aren't set,
-      # which only disables scrobbling.
       - name: Write local.properties
         run: |
           echo "LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}" > local.properties
@@ -34,12 +30,12 @@ jobs:
 
       - run: chmod +x gradlew
 
-      - name: Build dev debug APK
-        run: ./gradlew assembleDevDebug --stacktrace
+      - name: Build dev benchmark APK
+        run: ./gradlew assembleDevBenchmark --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: bitchord-dev-debug
-          path: app/build/outputs/apk/dev/debug/*.apk
+          name: bitchord-dev-optimized
+          path: app/build/outputs/apk/dev/benchmark/*.apk
           if-no-files-found: error
