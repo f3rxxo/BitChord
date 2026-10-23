@@ -196,7 +196,7 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                 ),
         )
 
-         // The sharp cover, edge to edge along the top, its lower part dissolving
+        // The sharp cover, edge to edge along the top, its lower part dissolving
         // into the wash behind it instead of ending in a hard line.
         if (art != null) {
             AsyncImage(
@@ -210,7 +210,7 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                     // As on the player: the cover at full width, a touch taller than
                     // square so it reads slightly larger; Crop trims the sides a little
                     // rather than squashing it.
-                    .fillMaxHeight(0.65f)
+                    .aspectRatio(0.92f)
                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
