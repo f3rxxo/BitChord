@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -181,7 +181,7 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                         scaleX = 1.4f
                         scaleY = 1.4f
                     }
-                    .blur(72.dp, BlurredEdgeTreatment.Unbounded),
+                    .blur(110.dp, BlurredEdgeTreatment.Unbounded),
             )
         }
         Box(
@@ -189,9 +189,9 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0.35f),
-                        0.5f to Color.Black.copy(alpha = 0.5f),
-                        1f to Color.Black.copy(alpha = 0.8f),
+                        0f to Color.Black.copy(alpha = 0.10f),
+                        0.5f to Color.Black.copy(alpha = 0.25f),
+                        1f to Color.Black.copy(alpha = 0.60f),
                     ),
                 ),
         )
@@ -207,16 +207,23 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    // About half the screen, as on the player; Crop trims the sides
-                    // of the square cover rather than squashing it.
-                    .fillMaxHeight(0.55f)
+                    // As on the player: the cover at full width, a touch taller than
+                    // square so it reads slightly larger; Crop trims the sides a little
+                    // rather than squashing it.
+                    .aspectRatio(0.92f)
                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
                         drawRect(
                             brush = Brush.verticalGradient(
+                                // Eased in many small steps so there is no visible band.
                                 0f to Color.Black,
-                                0.55f to Color.Black,
+                                0.45f to Color.Black,
+                                0.55f to Color.Black.copy(alpha = 0.94f),
+                                0.65f to Color.Black.copy(alpha = 0.80f),
+                                0.75f to Color.Black.copy(alpha = 0.58f),
+                                0.85f to Color.Black.copy(alpha = 0.33f),
+                                0.93f to Color.Black.copy(alpha = 0.12f),
                                 1f to Color.Transparent,
                             ),
                             blendMode = BlendMode.DstIn,

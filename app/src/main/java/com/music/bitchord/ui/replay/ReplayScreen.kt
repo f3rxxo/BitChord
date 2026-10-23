@@ -673,4 +673,4 @@ private fun EmptyReplay(period: ReplayPeriod, dark: Boolean) {
 private const val CHART_LENGTH = 5
 
 /** Songs shown when the Top songs chart is expanded. */
-private const val SONGS_EXPANDED_LENGTH = 50
+private const val SONGS_EXPANDED_LENGTH = 50 
