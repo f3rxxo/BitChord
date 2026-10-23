@@ -1,4 +1,4 @@
-  package com.music.bitchord.playback
+package com.music.bitchord.playback
 
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -211,7 +210,7 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                     // As on the player: the cover at full width, a touch taller than
                     // square so it reads slightly larger; Crop trims the sides a little
                     // rather than squashing it.
-                    .fillMaxHeight(0.65f)
+                    .aspectRatio(0.92f)
                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
