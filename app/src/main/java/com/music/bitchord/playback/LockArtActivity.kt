@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -207,10 +207,9 @@ private fun LockArtScreen(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    // As on the player: the cover at full width, a touch taller than
-                    // square so it reads slightly larger; Crop trims the sides a little
-                    // rather than squashing it.
-                    .aspectRatio(0.92f)
+                    //65% of the screen height; Crop trims the sides of the square
+                    // cover rather than squashing it.
+                    .fillMaxHeight(0.65f)
                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithContent {
                         drawContent()
