@@ -656,6 +656,9 @@ private fun BitChordApp(
     // The picker opened from the Library tab, where there is no track and
     // creating the playlist is the whole errand.
     var creatingPlaylist by remember { mutableStateOf(false) }
+    // Device tracks being saved into a playlist kept on this phone: one row's
+    // menu, or the Local Music multi-selection. Null while nothing is.
+    var localPlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
     var showSpotifyImportDialog by remember { mutableStateOf(false) }
     // Which album or playlist the collection menu is open on, or null when it
     // is shut. One slot for every surface that can open it — the shelves on
@@ -900,7 +903,7 @@ private fun BitChordApp(
     val downloadIdFor: (String?) -> String? = { id ->
         id?.let { Downloads.recordIdOf(it) ?: it }?.takeIf { it in savedCollections }
     }
-    LaunchedEffect(savedDownloads, savedCollections, detail?.browseId) {
+    LaunchedEffect(savedDownloads, savedCollections, detail?.browseId, localPlaylists) {
         val openPage = detail ?: return@LaunchedEffect
         val open = openPage.browseId
         // A downloaded playlist's page is a snapshot of the same folder and goes
@@ -915,6 +918,15 @@ private fun BitChordApp(
         ) {
             viewModel.reloadLocalDetail(open)
         }
+    }
+    // "Scan for new music" in Settings bumps this once MediaStore has picked up
+    // the new files, so the pages showing them re-read their folders.
+    val localRescan by LocalMediaRepository.rescanCount.collectAsStateWithLifecycle()
+    LaunchedEffect(localRescan) {
+        if (localRescan == 0) return@LaunchedEffect
+        viewModel.reloadLocalDetail("local:all")
+        viewModel.reloadLocalDetail("local:downloads")
+        viewModel.loadLibrarySongs()
     }
     LaunchedEffect(localMusicFolderUri, filterNonMusicAudio) {
         val open = detail?.browseId
@@ -2917,7 +2929,8 @@ private fun BitChordApp(
                                 sort = folderSortOf(page.browseId),
                                 viewType = folderViewTypeOf(page.browseId),
                                 collections = downloadCollections,
-                                selectable = isDownloads,
+                                selectable = isDownloads || page.browseId == "local:all",
+                                onAddToPlaylist = { selected -> localPlaylistSongs = selected },
                                 onOpenGroup = viewModel::openLocalGroup,
                                 onGroupLongPress = { group ->
                                     openBrowseMenu(
@@ -4396,6 +4409,18 @@ private fun BitChordApp(
                         viewModel.removeFromPlaylist(it.browseId, song)
                     }
                 },
+                onAddToLocalPlaylist = {
+                    songActions = null
+                    localPlaylistSongs = listOf(song)
+                },
+                onRemoveFromLocalPlaylist = detail?.browseId
+                    ?.takeIf { !fromPlayer && com.music.bitchord.data.spotify.LocalPlaylistStore.getPlaylist(it) != null }
+                    ?.let { playlistId ->
+                        {
+                            songActions = null
+                            com.music.bitchord.data.spotify.LocalPlaylistStore.removeSong(playlistId, song)
+                        }
+                    },
                 onOpenAlbum = { id ->
                     openPage(
                         id,
@@ -4606,6 +4631,30 @@ private fun BitChordApp(
                     onCreate = { title, privacy ->
                         viewModel.createPlaylist(title, privacy, target)
                         dismiss()
+                    },
+                )
+            }
+        }
+
+        // ---- Add to a playlist kept on this phone ----
+        localPlaylistSongs?.let { picked ->
+            val dismissLocal = { localPlaylistSongs = null }
+            ModalBottomSheet(
+                onDismissRequest = dismissLocal,
+                containerColor = MaterialTheme.colorScheme.background,
+            ) {
+                com.music.bitchord.ui.components.LocalPlaylistSheet(
+                    songs = picked,
+                    playlists = localPlaylists,
+                    onDone = { added, title ->
+                        dismissLocal()
+                        showQueueNotice(
+                            if (added > 0) {
+                                context.getString(R.string.added_to_local_playlist, added, title)
+                            } else {
+                                context.getString(R.string.song_already_in_playlist)
+                            },
+                        )
                     },
                 )
             }

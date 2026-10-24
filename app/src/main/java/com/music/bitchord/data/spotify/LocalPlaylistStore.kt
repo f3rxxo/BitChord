@@ -54,6 +54,9 @@ object LocalPlaylistStore {
                         albumId = sObj.optString("albumId", null).takeIf { !it.isNullOrBlank() && it != "null" },
                         albumName = sObj.optString("albumName", null).takeIf { !it.isNullOrBlank() && it != "null" },
                         isVideo = sObj.optBoolean("isVideo", false),
+                        localUri = sObj.optString("localUri", null).takeIf { !it.isNullOrBlank() && it != "null" },
+                        localPath = sObj.optString("localPath", null).takeIf { !it.isNullOrBlank() && it != "null" },
+                        trackNumber = if (sObj.has("trackNumber") && !sObj.isNull("trackNumber")) sObj.optInt("trackNumber") else null,
                     )
                     songs.add(song)
                 }
@@ -64,12 +67,50 @@ object LocalPlaylistStore {
     }
 
     fun savePlaylist(title: String, songs: List<Song>): LocalPlaylist {
-        val id = "sp_local_" + System.currentTimeMillis()
+        val id = "sp_local_" + System.currentTimeMillis() + "_" + (0..999).random()
         val playlist = LocalPlaylist(id = id, title = title, songs = songs)
         val updated = listOf(playlist) + _playlists.value.filterNot { it.id == id }
         _playlists.value = updated
         persist(updated)
         return playlist
+    }
+
+    /** A new, empty playlist — filled afterwards with [addSongs]. */
+    fun createPlaylist(title: String): LocalPlaylist = savePlaylist(title, emptyList())
+
+    /**
+     * Appends [songs] to the playlist [id], skipping any already in it.
+     * Returns how many were actually added.
+     */
+    fun addSongs(id: String, songs: List<Song>): Int {
+        val cleanId = id.removePrefix("local:playlist:").removePrefix("VL")
+        var added = 0
+        val updated = _playlists.value.map { p ->
+            if (p.id == cleanId || p.id == id || p.browseId == id) {
+                val have = p.songs.mapTo(HashSet()) { it.localUri ?: it.videoId }
+                val fresh = songs.filter { have.add(it.localUri ?: it.videoId) }
+                added = fresh.size
+                p.copy(songs = p.songs + fresh)
+            } else p
+        }
+        if (added > 0) {
+            _playlists.value = updated
+            persist(updated)
+        }
+        return added
+    }
+
+    /** Takes [song] out of the playlist [id]. */
+    fun removeSong(id: String, song: Song) {
+        val cleanId = id.removePrefix("local:playlist:").removePrefix("VL")
+        val key = song.localUri ?: song.videoId
+        val updated = _playlists.value.map { p ->
+            if (p.id == cleanId || p.id == id || p.browseId == id) {
+                p.copy(songs = p.songs.filterNot { (it.localUri ?: it.videoId) == key })
+            } else p
+        }
+        _playlists.value = updated
+        persist(updated)
     }
 
     fun deletePlaylist(id: String) {
@@ -114,6 +155,11 @@ object LocalPlaylistStore {
                     sObj.put("albumId", song.albumId)
                     sObj.put("albumName", song.albumName)
                     sObj.put("isVideo", song.isVideo)
+                    // A device file is only findable by these; without them a saved
+                    // local track came back as a row with nothing to play.
+                    sObj.put("localUri", song.localUri)
+                    sObj.put("localPath", song.localPath)
+                    sObj.put("trackNumber", song.trackNumber)
                     songsArray.put(sObj)
                 }
                 pObj.put("songs", songsArray)

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Check
@@ -118,6 +119,8 @@ class LocalFolder(
     val onDelete: ((List<Song>) -> Unit)? = null,
     /** Copies the selection to WebDAV; null (no server configured) hides the action. */
     val onUpload: ((List<Song>) -> Unit)? = null,
+    /** Saves the selection into a playlist kept on this phone; null hides the action. */
+    val onAddToPlaylist: ((List<Song>) -> Unit)? = null,
 )
 
 enum class LocalFolderTab { SONGS, ARTISTS, ALBUMS }
@@ -726,6 +729,15 @@ internal fun LocalFolderSelectionBar(
                 color = MaterialTheme.colorScheme.primary,
                 enabled = count > 0,
                 onClick = { upload(chosen()) },
+            )
+        }
+        folder.onAddToPlaylist?.let { add ->
+            SelectionAction(
+                icon = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                label = stringResource(R.string.local_playlist_action),
+                color = MaterialTheme.colorScheme.primary,
+                enabled = count > 0,
+                onClick = { add(chosen()) },
             )
         }
         folder.onDelete?.let { delete ->

@@ -1211,4 +1211,15 @@
     <string name="lock_screen_art_tile">Lock screen art</string>
     <string name="show_more">Show top 25</string>
     <string name="show_less">Show less</string>
+    <string name="add_to_local_playlist">Add to local playlist</string>
+    <string name="new_local_playlist">New local playlist</string>
+    <string name="local_playlist_action">Playlist</string>
+    <string name="added_to_local_playlist">Added %1$d to %2$s</string>
+    <string name="scan_for_new_music">Scan for new music</string>
+    <string name="scan_for_new_music_subtitle">Look for songs added to this device since the last scan</string>
+    <string name="scanning_music">Scanning…</string>
+    <plurals name="scan_found_new_songs">
+        <item quantity="one">Scan finished: %1$d new song</item>
+        <item quantity="other">Scan finished: %1$d new songs</item>
+    </plurals>
 </resources>

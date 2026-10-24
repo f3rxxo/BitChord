@@ -15,7 +15,11 @@ import com.music.bitchord.data.model.Song
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.download.DownloadStore
 import com.music.bitchord.download.Downloads
+import android.media.MediaScannerConnection
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
@@ -45,6 +49,86 @@ object LocalMediaRepository {
         "/call_rec/",
         "/whatsapp voice notes/",
     )
+
+    private val _rescanCount = MutableStateFlow(0)
+
+    /** Bumped each time [rescan] finishes, so open pages know to re-read their folders. */
+    val rescanCount = _rescanCount.asStateFlow()
+
+    /**
+     * Asks Android's media scanner to look at the music folders again, for files
+     * copied on since it last ran — it only does so on its own now and then, and
+     * a track dropped in over USB or a file manager can sit unlisted until it does.
+     *
+     * Walks the folder chosen in Settings, or the usual places (Music, Download,
+     * Documents, and the storage root's top level) when there is none, and hands
+     * every audio file found to the scanner, then waits for it to finish.
+     * Returns how many tracks the library gained.
+     */
+    suspend fun rescan(context: Context): Int = withContext(Dispatchers.IO) {
+        val before = runCatching { getLocalMusic(context).size }.getOrDefault(0)
+
+        val roots = mutableListOf<File>()
+        selectedFolder(AppSettings.localMusicFolderUri.value)?.let { roots.add(File(it.absolutePath)) }
+        if (roots.isEmpty()) {
+            @Suppress("DEPRECATION")
+            val external = android.os.Environment.getExternalStorageDirectory()
+            listOf(
+                android.os.Environment.DIRECTORY_MUSIC,
+                android.os.Environment.DIRECTORY_DOWNLOADS,
+                android.os.Environment.DIRECTORY_DOCUMENTS,
+            ).forEach { dir ->
+                @Suppress("DEPRECATION")
+                roots.add(android.os.Environment.getExternalStoragePublicDirectory(dir))
+            }
+            roots.add(external)
+        }
+
+        val files = LinkedHashSet<String>()
+        fun walk(dir: File, depth: Int) {
+            if (depth > 8 || !dir.isDirectory) return
+            // A `.nomedia` file is how a folder asks not to be scanned.
+            if (File(dir, ".nomedia").exists()) return
+            dir.listFiles()?.forEach { f ->
+                when {
+                    f.isDirectory -> if (!f.name.startsWith(".") && f.name != "Android") walk(f, depth + 1)
+                    f.isFile && f.extension.lowercase(Locale.ROOT) in scanExtensions -> files.add(f.absolutePath)
+                }
+            }
+        }
+        roots.forEach { root ->
+            // The storage root itself only contributes its own files; the folders
+            // worth scanning under it are already listed above.
+            if (root == roots.last() && roots.size > 1) {
+                root.listFiles()?.forEach { f ->
+                    if (f.isFile && f.extension.lowercase(Locale.ROOT) in scanExtensions) files.add(f.absolutePath)
+                }
+            } else {
+                walk(root, 0)
+            }
+        }
+
+        if (files.isNotEmpty()) {
+            val paths = files.toTypedArray()
+            suspendCancellableCoroutine<Unit> { cont ->
+                var remaining = paths.size
+                runCatching {
+                    MediaScannerConnection.scanFile(context.applicationContext, paths, null) { _, _ ->
+                        synchronized(paths) {
+                            remaining--
+                            if (remaining == 0 && cont.isActive) cont.resumeWith(Result.success(Unit))
+                        }
+                    }
+                }.onFailure { if (cont.isActive) cont.resumeWith(Result.success(Unit)) }
+            }
+        }
+
+        val after = runCatching { getLocalMusic(context).size }.getOrDefault(before)
+        _rescanCount.value = _rescanCount.value + 1
+        (after - before).coerceAtLeast(0)
+    }
+
+    private val scanExtensions = localMusicExtensions + setOf("wav", "3gp", "wma", "alac")
 
     /** Check if storage/audio permission is granted to query device local music. */
     fun hasStoragePermission(context: Context): Boolean {

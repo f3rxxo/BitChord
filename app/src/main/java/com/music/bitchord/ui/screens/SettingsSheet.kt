@@ -54,6 +54,7 @@ import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Gradient
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -1137,6 +1138,39 @@ fun SettingsScreen(
                         onClick = { AppSettings.setLocalMusicFolderUri("") },
                     )
                 }
+            }
+            val scanMusicTitle = stringResource(R.string.scan_for_new_music)
+            var scanningMusic by remember { mutableStateOf(false) }
+            row(scanMusicTitle, "scan", "refresh", "rescan", "new songs", "library") {
+                SettingsRow(
+                    icon = Icons.Rounded.Refresh,
+                    title = scanMusicTitle,
+                    subtitle = stringResource(
+                        if (scanningMusic) R.string.scanning_music else R.string.scan_for_new_music_subtitle,
+                    ),
+                    onClick = {
+                        if (!scanningMusic) {
+                            if (!LocalMediaRepository.hasStoragePermission(context)) {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    context.getString(R.string.storage_required_read),
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                scanningMusic = true
+                                backupScope.launch {
+                                    val gained = runCatching { LocalMediaRepository.rescan(context) }.getOrDefault(0)
+                                    scanningMusic = false
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        context.resources.getQuantityString(R.plurals.scan_found_new_songs, gained, gained),
+                                        android.widget.Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            }
+                        }
+                    },
+                )
             }
             val filterNonMusicAudioTitle = stringResource(R.string.filter_non_music_audio)
             row(filterNonMusicAudioTitle, "podcast", "recording") {

@@ -143,6 +143,10 @@ fun SongActionsSheet(
     onOpenArtist: (String) -> Unit,
     modifier: Modifier = Modifier,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    /** Saves a device track into a playlist kept on this phone; null hides the row. */
+    onAddToLocalPlaylist: (() -> Unit)? = null,
+    /** Takes a track out of the local playlist whose page it is shown on; null hides the row. */
+    onRemoveFromLocalPlaylist: (() -> Unit)? = null,
     showSleepTimer: Boolean = false,
     /**
      * Sends the playing track back to YouTube's own upload, and keeps it there.
@@ -284,6 +288,26 @@ fun SongActionsSheet(
                 onClick = onAddToPlaylist,
             )
             onRemoveFromPlaylist?.let {
+                ActionRow(
+                    icon = Icons.Rounded.PlaylistRemove,
+                    label = stringResource(R.string.remove_from_playlist),
+                    accent = palette.accent,
+                    onClick = it,
+                )
+            }
+            GroupSeparator(palette)
+        }
+
+        if (isOffline && (onAddToLocalPlaylist != null || onRemoveFromLocalPlaylist != null)) {
+            onAddToLocalPlaylist?.let {
+                ActionRow(
+                    icon = Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    label = stringResource(R.string.add_to_local_playlist),
+                    accent = palette.accent,
+                    onClick = it,
+                )
+            }
+            onRemoveFromLocalPlaylist?.let {
                 ActionRow(
                     icon = Icons.Rounded.PlaylistRemove,
                     label = stringResource(R.string.remove_from_playlist),
