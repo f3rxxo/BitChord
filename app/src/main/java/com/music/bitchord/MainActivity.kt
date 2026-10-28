@@ -3000,6 +3000,12 @@ private fun BitChordApp(
                                 (page.songs as? UiState.Success)?.data.orEmpty().mapTo(HashSet()) { it.contextEntryKey() }
                             val useBounded =
                                 (page.type == BrowseType.ALBUM || page.type == BrowseType.PLAYLIST) &&
+                                    // A playlist kept on this device is whole already and
+                                    // has nothing to page in, so it plays as an ordinary
+                                    // queue — the way Local Music does — which is also
+                                    // what makes Shuffle reorder all of it rather than a
+                                    // window of an album-style context.
+                                    !page.browseId.startsWith("local:") &&
                                     selected?.contextEntryKey()?.let(pageSongKeys::contains) == true &&
                                     !CastController.state.value.casting
                             val latestPage = if (useBounded) {
@@ -3061,6 +3067,7 @@ private fun BitChordApp(
                             // search button; one fading out keeps its list whole.
                             searching = detailSearching && page.browseId == detail?.browseId,
                             onSearchingChange = { detailSearching = it },
+                            onAddAll = addSongsToQueue,
                             onArtistClick = { id, name ->
                                 viewModel.openDetail(id, name, "Artist", null, BrowseType.ARTIST)
                             },

@@ -53,6 +53,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import com.music.bitchord.data.model.LibraryState
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
@@ -303,6 +305,11 @@ fun DetailScreen(
      */
     searching: Boolean = false,
     onSearchingChange: (Boolean) -> Unit = {},
+    /**
+     * Queues every track the search leaves standing, after what is already
+     * queued. Null hides the "Add all" button beside Play all.
+     */
+    onAddAll: ((List<Song>) -> Unit)? = null,
     /**
      * Saves this release to the account's library, or takes it out —
      * [DetailPage.library] says which way round. Null hides the control
@@ -574,6 +581,26 @@ fun DetailScreen(
                         palette = palette,
                         type = page.type,
                     )
+                }
+            }
+
+            // What the search leaves standing, as one set: Songs tab rows, or the
+            // tracks behind the Artists / Albums cards that match.
+            if (searching && query.isNotBlank() && !isArtist) {
+                val resultSongs = if (folder != null && folderState != null && folderState.tab != LocalFolderTab.SONGS) {
+                    folderGroups.flatMap { it.songs }.distinctBy { it.videoId }
+                } else {
+                    queue
+                }
+                if (resultSongs.isNotEmpty()) {
+                    item(key = "search-actions") {
+                        SearchResultActions(
+                            count = resultSongs.size,
+                            palette = palette,
+                            onPlayAll = { onSongClick(resultSongs, 0) },
+                            onAddAll = onAddAll?.let { add -> { add(resultSongs) } },
+                        )
+                    }
                 }
             }
 
@@ -1152,6 +1179,61 @@ private fun DetailSearchField(
                 ),
                 tint = palette.onBackgroundVariant,
                 modifier = Modifier.size(17.dp),
+            )
+        }
+    }
+}
+
+/** Play all / Add all for the tracks a search leaves standing. */
+@Composable
+private fun SearchResultActions(
+    count: Int,
+    palette: ArtworkPalette,
+    onPlayAll: () -> Unit,
+    onAddAll: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = HEADER_GUTTER)
+            .padding(bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        @Composable
+        fun Pill(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, modifier: Modifier) {
+            Row(
+                modifier = modifier
+                    .height(44.dp)
+                    .clip(PILL_SHAPE)
+                    .background(palette.accent.copy(alpha = 0.18f))
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(icon, contentDescription = null, tint = palette.accent, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = palette.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Pill(
+            stringResource(R.string.play_all_results, count),
+            Icons.Rounded.PlayArrow,
+            onPlayAll,
+            Modifier.weight(1f),
+        )
+        if (onAddAll != null) {
+            Pill(
+                stringResource(R.string.add_all_results, count),
+                Icons.AutoMirrored.Rounded.PlaylistAdd,
+                onAddAll,
+                Modifier.weight(1f),
             )
         }
     }
