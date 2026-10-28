@@ -1774,6 +1774,45 @@ private fun BitChordApp(
     val addSongsToQueue: (List<Song>) -> Unit = { songs -> queueSongs(songs, false) }
     val playSongsNext: (List<Song>) -> Unit = { songs -> queueSongs(songs, true) }
 
+    /**
+     * [songs] onto the very end of the queue — behind everything already there,
+     * AutoPlay included — as ordinary context tracks rather than user-queued
+     * ones. The difference is what lets Shuffle reach them: it reorders the
+     * context tracks and leaves the user queue pinned, so a batch added this
+     * way is shuffled in with the rest when shuffle is turned on. When shuffle
+     * is already on, the batch itself goes in shuffled.
+     */
+    val addSongsToQueueEnd: (List<Song>) -> Unit = { songs ->
+        if (songs.isNotEmpty()) {
+            scope.launch {
+                if (refusedByHost()) return@launch
+                val c = controller
+                if (c == null || c.mediaItemCount == 0 || ListenTogether.state.value.inParty) {
+                    addSongsToQueue(songs)
+                    return@launch
+                }
+                val batch = if (QueueShuffle.enabled.value) songs.shuffled() else songs
+                val current = c.currentMediaItem?.toSong()
+                c.addMediaItems(
+                    c.mediaItemCount,
+                    batch.map {
+                        it.copy(
+                            radioName = current?.radioName,
+                            playbackSource = current?.playbackSource ?: queueLabel,
+                            playbackSourceType = current?.playbackSourceType ?: PlaybackSourceType.QUEUE,
+                            playbackSourceId = current?.playbackSourceId,
+                        ).asQueueEntry(QueueTier.CONTEXT).toMediaItem()
+                    },
+                )
+                showQueueNotice(
+                    context.resources.getQuantityString(
+                        R.plurals.songs_added_to_queue, batch.size, batch.size,
+                    ),
+                )
+            }
+        }
+    }
+
     // ---- Links from outside the app ----
 
     /**
@@ -3067,7 +3106,7 @@ private fun BitChordApp(
                             // search button; one fading out keeps its list whole.
                             searching = detailSearching && page.browseId == detail?.browseId,
                             onSearchingChange = { detailSearching = it },
-                            onAddAll = addSongsToQueue,
+                            onAddAll = addSongsToQueueEnd,
                             onArtistClick = { id, name ->
                                 viewModel.openDetail(id, name, "Artist", null, BrowseType.ARTIST)
                             },

@@ -1222,6 +1222,6 @@
         <item quantity="one">Scan finished: %1$d new song</item>
         <item quantity="other">Scan finished: %1$d new songs</item>
     </plurals>
-    <string name="play_all_results">Play all (%1$d)</string>
+    <string name="shuffle_all_results">Shuffle all (%1$d)</string>
     <string name="add_all_results">Add all to queue (%1$d)</string>
 </resources>

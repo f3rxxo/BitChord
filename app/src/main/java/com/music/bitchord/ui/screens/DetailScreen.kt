@@ -597,7 +597,7 @@ fun DetailScreen(
                         SearchResultActions(
                             count = resultSongs.size,
                             palette = palette,
-                            onPlayAll = { onSongClick(resultSongs, 0) },
+                            onShuffleAll = { onShuffle(resultSongs) },
                             onAddAll = onAddAll?.let { add -> { add(resultSongs) } },
                         )
                     }
@@ -1184,12 +1184,12 @@ private fun DetailSearchField(
     }
 }
 
-/** Play all / Add all for the tracks a search leaves standing. */
+/** Shuffle all / Add all for the tracks a search leaves standing. */
 @Composable
 private fun SearchResultActions(
     count: Int,
     palette: ArtworkPalette,
-    onPlayAll: () -> Unit,
+    onShuffleAll: () -> Unit,
     onAddAll: (() -> Unit)?,
 ) {
     Row(
@@ -1223,9 +1223,9 @@ private fun SearchResultActions(
             }
         }
         Pill(
-            stringResource(R.string.play_all_results, count),
-            Icons.Rounded.PlayArrow,
-            onPlayAll,
+            stringResource(R.string.shuffle_all_results, count),
+            BitChordIcons.Shuffle,
+            onShuffleAll,
             Modifier.weight(1f),
         )
         if (onAddAll != null) {
